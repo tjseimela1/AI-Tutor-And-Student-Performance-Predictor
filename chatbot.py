@@ -11,7 +11,7 @@ api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     raise ValueError("GEMINI_API_KEY is missing from your .env file.")
 
-# Connect to Gemini
+# Connect to API
 client = genai.Client(api_key=api_key)
 
 # Instructions for our AI tutor
@@ -25,9 +25,9 @@ Help students understand instead of just memorising.
 
 
 def start_chatbot():
-    # Start a conversation with Gemini
+    # Start a conversation with the API
     chat = client.chats.create(
-        model="gemini-3.7-flash",
+        model="gemini-3.8-flash",
         config={
             "system_instruction": SYSTEM_INSTRUCTION
         }
