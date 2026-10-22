@@ -1,40 +1,45 @@
 
-from google import genai
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from groq import Groq
 
 # Load the API key from the .env file
 load_dotenv()
 
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("GROQ_API_KEY")
 
 if not api_key:
-    raise ValueError("GEMINI_API_KEY is missing from your .env file.")
+    raise ValueError(
+        "GROQ_API_KEY is missing. Check your .env file."
+    )
 
-# Connect to API
-client = genai.Client(api_key=api_key)
+# Connect to Groq
+client = Groq(api_key=api_key)
 
-# Instructions for our AI tutor
+# Instructions for the AI tutor
 SYSTEM_INSTRUCTION = """
 You are an AI tutor for students.
+
 Explain topics in simple English.
+Answer general questions and school-related questions.
 Give examples when helpful.
 Be patient, friendly, and encouraging.
 Help students understand instead of just memorising.
+If you are unsure, say so honestly.
 """
 
 
 def start_chatbot():
-    # Start a conversation with the API
-    chat = client.chats.create(
-        model="gemini-3.8-flash",
-        config={
-            "system_instruction": SYSTEM_INSTRUCTION
+    # Store the conversation history
+    messages = [
+        {
+            "role": "system",
+            "content": SYSTEM_INSTRUCTION
         }
-    )
+    ]
 
     print("=" * 40)
-    print("       AI TUTOR CHATBOT")
+    print("          AI TUTOR CHATBOT")
     print("=" * 40)
     print("Ask a question to start learning.")
     print("Type 'exit' to stop the chatbot.")
@@ -50,13 +55,38 @@ def start_chatbot():
             print("AI Tutor: Please enter a question.")
             continue
 
+        # Add the student's question
+        messages.append({
+            "role": "user",
+            "content": question
+        })
+
         try:
-            response = chat.send_message(message=question)
-            print("\nAI Tutor:", response.text)
+            response = client.chat.completions.create(
+                model="openai/gpt-oss-20b",
+                messages=messages
+            )
+
+            answer = response.choices[0].message.content
+
+            if answer:
+                print("\nAI Tutor:", answer)
+
+                # Save the answer for conversation context
+                messages.append({
+                    "role": "assistant",
+                    "content": answer
+                })
+            else:
+                print("AI Tutor: No answer was returned.")
+                messages.pop()
 
         except Exception as error:
-            print("\nSorry, something went wrong.")
-            print("Error:", error)
+            # Remove the unanswered question
+            messages.pop()
+
+            print("\nAI Tutor: Sorry, something went wrong.")
+            print("Technical details:", error)
 
 
 if __name__ == "__main__":
