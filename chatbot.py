@@ -1,93 +1,125 @@
 
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
-from groq import Groq
+from groq import Groq, APIConnectionError, AuthenticationError, RateLimitError
 
-# Load the API key from the .env file
-load_dotenv()
+# Load API key from the project .env file
+load_dotenv(Path(__file__).with_name(".env"))
 
-api_key = os.getenv("GROQ_API_KEY")
-
-if not api_key:
-    raise ValueError(
-        "GROQ_API_KEY is missing. Check your .env file."
-    )
+API_KEY = os.getenv("GROQ_API_KEY")
 
 # Connect to Groq
-client = Groq(api_key=api_key)
+client = Groq(api_key=API_KEY) if API_KEY else None
 
-# Instructions for the AI tutor
-SYSTEM_INSTRUCTION = """
-You are an AI tutor for students.
+# AI assistant instructions
+SYSTEM_PROMPT = """
+You are a helpful, intelligent and knowledgeable AI assistant.
 
-Explain topics in simple English.
-Answer general questions and school-related questions.
-Give examples when helpful.
-Be patient, friendly, and encouraging.
-Help students understand instead of just memorising.
-If you are unsure, say so honestly.
+Your job is to answer questions on a wide range of topics, including:
+
+- Education and school subjects
+- Mathematics and science
+- Information Technology and programming
+- History and geography
+- General knowledge
+- Technology and artificial intelligence
+- Writing and communication
+- Everyday questions and problem solving
+
+RULES:
+
+1. Answer questions clearly and accurately.
+2. Use simple English when explaining difficult topics.
+3. Give step-by-step explanations when necessary.
+4. Provide examples where they help understanding.
+5. Do not restrict yourself to school-related questions.
+6. Do not invent facts when you are uncertain.
+7. If a question is unclear, ask for clarification.
+8. Be friendly, patient and respectful.
+9. Keep simple answers short and give detailed answers when needed.
+10. Help students understand concepts instead of simply memorising answers.
+
+You are a general-purpose AI assistant, not just a school chatbot.
 """
 
 
-def start_chatbot():
-    # Store the conversation history
-    messages = [
-        {
-            "role": "system",
-            "content": SYSTEM_INSTRUCTION
+def answer(question, history=None):
+
+    question = (question or "").strip()
+
+    if not question:
+        return {
+            "answer": "Please enter a question.",
+            "topic": "Guidance",
+            "resource": None,
+            "matched": False
         }
-    ]
 
-    print("=" * 40)
-    print("          AI TUTOR CHATBOT")
-    print("=" * 40)
-    print("Ask a question to start learning.")
-    print("Type 'exit' to stop the chatbot.")
+    if client is None:
+        return {
+            "answer": "The AI service is not configured. Please check your GROQ_API_KEY in the .env file.",
+            "topic": "System",
+            "resource": None,
+            "matched": False
+        }
 
-    while True:
-        question = input("\nYou: ").strip()
+    try:
+        # Start with the assistant instructions
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT}
+        ]
 
-        if question.lower() == "exit":
-            print("AI Tutor: Goodbye! Keep learning.")
-            break
+        # Add the previous conversation
+        if history:
+            for message in history[-10:]:
+                role = message.get("role")
+                content = message.get("content", "")
 
-        if not question:
-            print("AI Tutor: Please enter a question.")
-            continue
+                if role in ("user", "assistant") and content:
+                    messages.append({
+                        "role": role,
+                        "content": str(content)[:3000]
+                    })
 
-        # Add the student's question
+        # Add the current question
         messages.append({
             "role": "user",
             "content": question
         })
 
-        try:
-            response = client.chat.completions.create(
-                model="openai/gpt-oss-20b",
-                messages=messages
-            )
+        # Send the conversation to Groq
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=messages,
+            max_completion_tokens=1024
+        )
 
-            answer = response.choices[0].message.content
+        ai_answer = response.choices[0].message.content
 
-            if answer:
-                print("\nAI Tutor:", answer)
+        return {
+            "answer": ai_answer or "I couldn't generate an answer. Please try again.",
+            "topic": "AI Assistant",
+            "resource": None,
+            "matched": True
+        }
 
-                # Save the answer for conversation context
-                messages.append({
-                    "role": "assistant",
-                    "content": answer
-                })
-            else:
-                print("AI Tutor: No answer was returned.")
-                messages.pop()
+    except AuthenticationError:
+        message = "API authentication failed. Please check your Groq API key."
 
-        except Exception as error:
-            # Remove the unanswered question
-            messages.pop()
+    except RateLimitError:
+        message = "The AI service has reached its current usage limit. Please try again later."
 
-            print("\nAI Tutor: Sorry, something went wrong.")
-            print("Technical details:", error)
+    except APIConnectionError:
+        message = "Unable to connect to the AI service. Check your internet connection."
 
+    except Exception:
+        message = "Something went wrong while generating your answer. Please try again."
 
-if __name__ == "__main__":
-    start_chatbot()
+    return {
+        "answer": message,
+        "topic": "System",
+        "resource": None,
+        "matched": False
+    }
