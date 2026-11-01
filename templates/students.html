@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}
+    Dataset Records
+{% endblock %}
+{% block breadcrumb %}
+    xAPI records
+{% endblock %}
+{% block content %}
+    <div class="heading-row">
+        <div>
+            <span class="kicker">BENCHMARK RECORD EXPLORER</span>
+            <h1 class="page-title">
+                Learner Performance Records
+            </h1>
+            <p class="page-subtitle">
+                Anonymous records from xAPI-Edu-Data. No real names or school learner IDs are included.
+            </p>
+        </div>
+        <span class="small-tag">{{ total }} results</span>
+    </div>
+    <section class="panel table-panel">
+        <form class="filters" action="/learners" method="get">
+            <label><span class="sr-only">Search records</span><input type="search" name="q" placeholder="Search xAPI row ID or subject" value="{{ query }}" maxlength="80"></label><label><span class="sr-only">Review priority filter</span>
+            <select name="risk">
+                <option value="">All priority levels</option>
+                {% for level in ['High','Moderate','Low'] %}
+                    <option value="{{ level }}" {% if selected_risk == level %}selected{% endif %}>{{ level }} priority</option>
+                {% endfor %}
+            </select>
+            </label><label><span class="sr-only">School stage filter</span>
+            <select name="stage">
+                <option value="">All school stages</option>
+                {% for row in stages %}
+                    <option value="{{ row.code }}" {% if row.code == selected_stage %}selected{% endif %}>{{ row.stage }}</option>
+                {% endfor %}
+            </select>
+            </label><label><span class="sr-only">Grade filter</span>
+            <select name="grade">
+                <option value="">All grades</option>
+                {% for g in grades %}
+                    <option value="{{ g }}" {% if g == selected_grade %}selected{% endif %}>{{ g }}</option>
+                {% endfor %}
+            </select>
+            </label>
+            <button type="submit" class="btn btn-primary">
+                Filter
+            </button>
+            <a class="btn btn-secondary" href="/learners">Reset</a>
+        </form>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            LEARNER ROW
+                        </th>
+                        <th>
+                            SCHOOL STAGE
+                        </th>
+                        <th>
+                            GRADE
+                        </th>
+                        <th>
+                            SUBJECT
+                        </th>
+                        <th>
+                            VISITS
+                        </th>
+                        <th>
+                            RAISED HANDS
+                        </th>
+                        <th>
+                            ABSENCE
+                        </th>
+                        <th>
+                            P(LOW)
+                        </th>
+                        <th>
+                            PREDICTED
+                        </th>
+                        <th>
+                            PRIORITY
+                        </th>
+                        <th>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                        <tr>
+                            <td>
+                                <div class="student-cell">
+                                    <span class="student-avatar">X</span>
+                                    <div>
+                                        <strong>{{ s.student_id }}</strong><small>Benchmark record</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {{ s.StageID }}
+                            </td>
+                            <td>
+                                {{ s.GradeID }}
+                            </td>
+                            <td>
+                                {{ s.Topic }}
+                            </td>
+                            <td>
+                                {{ s.VisITedResources }}
+                            </td>
+                            <td>
+                                {{ s.raisedhands }}
+                            </td>
+                            <td>
+                                {{ s.StudentAbsenceDays }}
+                            </td>
+                            <td>
+                                <strong>{{ s.probability_low }}%</strong>
+                            </td>
+                            <td>
+                                <strong>{{ s.predicted_class }}</strong>
+                            </td>
+                            <td>
+                                <span class="risk-pill risk-{{ s.risk|lower }}">{{ s.risk }}</span>
+                            </td>
+                            <td>
+                                <a href="/learners/{{ s.student_id | urlencode }}" class="row-arrow" aria-label="View record">↗</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="11">
+                                No matching records found.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="table-footnote">
+            Prediction labels L / M / H indicate performance bands, not pass/fail, dropout, or precise marks.
+        </p>
+    </section>
+{% endblock %}
