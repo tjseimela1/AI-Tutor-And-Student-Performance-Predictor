@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}
+    Private CSV Import
+{% endblock %}
+{% block breadcrumb %}
+    Import records
+{% endblock %}
+{% block content %}
+    <div class="heading-row">
+        <div>
+            <span class="kicker">RESTRICTED LOCAL PROTOTYPE</span>
+            <h1 class="page-title">
+                Import xAPI-Format CSV
+            </h1>
+            <p class="page-subtitle">
+                Use only de-identified, authorised local test records with the xAPI input columns.
+            </p>
+        </div>
+    </div>
+    <section class="panel import-panel">
+        <h2>
+            CSV upload
+        </h2>
+        <p>
+            Required feature headers: <code>raisedhands, VisITedResources, AnnouncementsView, Discussion, StageID, GradeID, Topic, Semester, StudentAbsenceDays</code>. Optional <code>Class</code> label for comparison. Maximum 2 MB, 5,000 rows.
+        </p>
+        <p class="sensitive-warning">
+            Never upload private student data without explicit permission from the school or data owner. The optional local CSV is stored unencrypted. Public mode disables import entirely.
+        </p>
+        {% if message %}
+            <div class="form-error">
+                {{ message }}
+            </div>
+        {% endif %}
+        <form method="post" action="/import" enctype="multipart/form-data" class="upload-form">
+            <input type="hidden" name="csrf" value="{{ token }}"><input type="file" name="file" accept=".csv,text/csv" required>
+            <button type="submit" class="btn btn-primary">
+                Upload & analyse →
+            </button>
+        </form>
+        <p class="tiny-note">
+            The underlying benchmark-trained model is NOT automatically retrained or independently validated using uploaded rows.
+        </p>
+    </section>
+{% endblock %}

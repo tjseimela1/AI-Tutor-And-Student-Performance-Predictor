@@ -1,0 +1,27 @@
+{% if trend.actual %}
+    <div class="chart-wrap">
+        <svg viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="Observed dated weekly average resource visits with optional three-week baseline projection" preserveAspectRatio="xMidYMid meet">
+            {% for value in [0,25,50,75,100] %}
+                {% set y = chart.height - 30 - value*(chart.height-60)/100 %}
+                <line x1="46" y1="{{ y }}" x2="{{ chart.width - 34 }}" y2="{{ y }}" stroke="#e8edf7" stroke-width="1"/>
+                    <text x="32" y="{{ y+4 }}" text-anchor="end" class="chart-axis">
+                        {{ value }}
+                    </text>
+                {% endfor %}
+                {% for tick in chart.ticks %}
+                    <text x="{{ tick.x }}" y="{{ chart.height-7 }}" text-anchor="middle" class="chart-axis">
+                        {{ tick.label }}
+                    </text>
+                {% endfor %}
+                <polyline fill="none" stroke="#4c65df" stroke-width="3.7" stroke-linecap="round" stroke-linejoin="round" points="{{ chart.actual }}"/>
+                    <polyline fill="none" stroke="#12a594" stroke-width="3" stroke-dasharray="7 6" stroke-linecap="round" stroke-linejoin="round" points="{{ chart.forecast }}"/>
+        </svg>
+        <div class="chart-key">
+            <span><i class="key-dot indigo"></i>Recorded weekly mean visits</span><span><i class="key-dot teal"></i>Illustrative forecast</span>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        No dated weekly history exists in the xAPI dataset. A forecast would be misleading, so none is shown.
+    </div>
+{% endif %}
