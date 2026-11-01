@@ -1,159 +1,58 @@
-"""
-Student Performance Predictor
-Loads the model trained by train_model.py and predicts
-whether a student's performance is Low, Medium, or High.
-"""
-
+"""Multiclass xAPI performance prediction, with separate low-performance probability."""
 from pathlib import Path
-import argparse
-import json
-
 import joblib
-import pandas as pd
+import numpy as np
+from data_preprocessing import DATASET, FEATURES
+from train_models import train
 
 
-# Project paths
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_MODEL_PATH = (
-    BASE_DIR / "models" / "student_performance_model.pkl"
-)
-
-# Meaning of the labels in the xAPI-Edu-Data dataset
-PERFORMANCE_LABELS = {
-    "L": "Low",
-    "M": "Medium",
-    "H": "High",
-}
+def load_model(path='models/risk_model.joblib'):
+    path = Path(path)
+    if not path.exists():
+        train(DATASET, path.parent)
+    package = joblib.load(path)
+    if package.get('features') != FEATURES:
+        raise ValueError('Incompatible old model; delete models/risk_model.joblib and retrain.')
+    return package
 
 
-def load_model(model_path=DEFAULT_MODEL_PATH):
-    """Load the trained model from the models folder."""
-    model_path = Path(model_path)
-
-    if not model_path.exists():
-        raise FileNotFoundError(
-            f"Trained model not found at: {model_path}\n"
-            "Run train_model.py first to train and save the model."
-        )
-
-    return joblib.load(model_path)
+def risk_label(probability):
+    # These are demonstration-only prioritisation bands, NOT calibrated probabilities.
+    if probability >= 0.60:
+        return 'High'
+    if probability >= 0.30:
+        return 'Moderate'
+    return 'Low'
 
 
-def predict_student(student_data, model_path=DEFAULT_MODEL_PATH):
-    """
-    Predict student performance.
+def study_recommendation(row):
+    suggestions = []
+    if row['StudentAbsenceDays'] == 'Above-7':
+        suggestions.append('Absence recorded as more than seven days. Ask a teacher and parent or guardian about any barriers to attending school.')
+    if row['VisITedResources'] < 30:
+        suggestions.append('Learning-resource visits are below 30; plan short, regular practice with a teacher or parent/guardian.')
+    if row['raisedhands'] < 25:
+        suggestions.append('Raised-hand participation is below 25; encourage the learner to ask questions during lessons.')
+    if row['Discussion'] < 25:
+        suggestions.append('Discussion participation is below 25; encourage supported classroom group work.')
+    if row['AnnouncementsView'] < 25:
+        suggestions.append('Announcements viewed are below 25; help the learner check school or class updates.')
+    if not suggestions:
+        suggestions.append('Continue learning habits, give positive feedback, and review progress with the class teacher.')
+    return suggestions
 
-    student_data must contain the original dataset feature names,
-    excluding the target column 'Class'.
-    """
-    if not isinstance(student_data, dict) or not student_data:
-        raise ValueError(
-            "Student data must be a non-empty JSON object."
-        )
 
-    if "Class" in student_data:
-        raise ValueError(
-            "Do not provide 'Class'. It is the value being predicted."
-        )
-
-    model = load_model(model_path)
-
-    # The training pipeline expects the original dataset columns.
-    expected_features = getattr(model, "feature_names_in_", None)
-
-    if expected_features is None:
-        raise ValueError(
-            "The saved model does not contain feature names. "
-            "Please retrain it using the supplied train_model.py."
-        )
-
-    missing_features = [
-        feature for feature in expected_features
-        if feature not in student_data
-    ]
-
-    if missing_features:
-        raise ValueError(
-            "Missing required features: "
-            + ", ".join(missing_features)
-        )
-
-    # Keep the same feature order used during training.
-    input_data = {
-        feature: student_data[feature]
-        for feature in expected_features
-    }
-
-    student_df = pd.DataFrame([input_data])
-
-    # Predict the student's performance label.
-    prediction = model.predict(student_df)[0]
-    label = str(prediction)
-
-    result = {
-        "predicted_label": label,
-        "predicted_performance": PERFORMANCE_LABELS.get(
-            label, "Unknown"
-        ),
-    }
-
-    # Include probabilities if supported by the trained model.
-    if hasattr(model, "predict_proba"):
-        probabilities = model.predict_proba(student_df)[0]
-
-        # The pipeline exposes the class labels from its classifier.
-        classes = model.classes_
-
-        result["class_probabilities"] = {
-            PERFORMANCE_LABELS.get(str(class_label), str(class_label)):
-                round(float(probability), 4)
-            for class_label, probability
-            in zip(classes, probabilities)
-        }
-
+def score_students(frame, model_path='models/risk_model.joblib'):
+    package = load_model(model_path)
+    result = frame.copy()
+    probabilities = package['pipeline'].predict_proba(result[FEATURES])
+    labels = package['pipeline'].classes_
+    p = {label: probabilities[:, list(labels).index(label)] for label in ('L', 'M', 'H')}
+    result['predicted_class'] = package['pipeline'].predict(result[FEATURES])
+    result['probability_low'] = np.round(p['L'] * 100, 1)
+    result['probability_middle'] = np.round(p['M'] * 100, 1)
+    result['probability_high'] = np.round(p['H'] * 100, 1)
+    result['risk_probability'] = result['probability_low']  # compatibility: probability of low performance
+    result['risk'] = [risk_label(x) for x in p['L']]
+    result['recommendations'] = [study_recommendation(row) for _, row in result.iterrows()]
     return result
-
-
-def main():
-    """Run predictions from the command line."""
-    parser = argparse.ArgumentParser(
-        description="Predict student performance using the trained model."
-    )
-
-    parser.add_argument(
-        "--input",
-        required=True,
-        help="JSON text or path to a JSON input file.",
-    )
-
-    parser.add_argument(
-        "--model",
-        default=str(DEFAULT_MODEL_PATH),
-        help="Optional path to the saved model.",
-    )
-
-    args = parser.parse_args()
-
-    try:
-        input_path = Path(args.input)
-
-        if input_path.is_file():
-            student_data = json.loads(
-                input_path.read_text(encoding="utf-8")
-            )
-        else:
-            student_data = json.loads(args.input)
-
-        result = predict_student(
-            student_data,
-            model_path=args.model,
-        )
-
-        print(json.dumps(result, indent=4))
-
-    except (ValueError, FileNotFoundError, json.JSONDecodeError) as error:
-        parser.exit(1, f"Prediction error: {error}\n")
-
-
-if __name__ == "__main__":
-    main()
