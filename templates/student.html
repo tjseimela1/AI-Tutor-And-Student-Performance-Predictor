@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}
+    xAPI Record
+{% endblock %}
+{% block breadcrumb %}
+    Dataset / {{ student.student_id }}
+{% endblock %}
+{% block content %}
+    <a class="back-link" href="/learners">← Back to records</a>
+    <div class="student-head">
+        <span class="profile-avatar">X</span>
+        <div>
+            <span class="kicker">ANONYMOUS BENCHMARK RECORD</span>
+            <h1 class="page-title">
+                {{ student.student_id }}
+            </h1>
+            <p class="page-subtitle">
+                {{ student.Topic }} · {{ student.StageID }} · {{ student.GradeID }} · Semester {{ student.Semester }}
+            </p>
+        </div>
+        <span class="risk-pill risk-{{ student.risk|lower }} large-pill">{{ student.risk }} review priority · P(L) {{ student.probability_low }}%</span>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-title">Resources Visited</span><strong>{{ student.VisITedResources }}</strong><small>xAPI LMS counter</small>
+        </div>
+        <div class="stat-card">
+            <span class="stat-title">Raised Hands</span><strong>{{ student.raisedhands }}</strong><small>Class participation count</small>
+        </div>
+        <div class="stat-card">
+            <span class="stat-title">Discussion</span><strong>{{ student.Discussion }}</strong><small>Participation count</small>
+        </div>
+        <div class="stat-card">
+            <span class="stat-title">Announcements</span><strong>{{ student.AnnouncementsView }}</strong><small>Announcements viewed</small>
+        </div>
+    </div>
+    <div class="dashboard-grid">
+        <section class="panel main-panel">
+            <h2>
+                School Performance Classification
+            </h2>
+            <p class="panel-description">
+                The trained model estimates Low (L), Middle (M) or High (H) performance class. Probabilities are not calibrated for deployment.
+            </p>
+            <div class="dist-item">
+                Predicted class <strong>{{ student.predicted_class }}</strong>
+            </div>
+            <div class="dist-item">
+                Probability of Low (L) <strong>{{ student.probability_low }}%</strong>
+            </div>
+            <div class="dist-item">
+                Probability of Middle (M) <strong>{{ student.probability_middle }}%</strong>
+            </div>
+            <div class="dist-item">
+                Probability of High (H) <strong>{{ student.probability_high }}%</strong>
+            </div>
+            <div class="dist-item">
+                Recorded absence category <strong>{{ student.StudentAbsenceDays }}</strong>
+            </div>
+            {% if student.Class is defined %}
+                <div class="dist-item">
+                    Original dataset class <strong>{{ student.Class }}</strong>
+                </div>
+            {% endif %}
+            <p class="tiny-note">
+                There are no exact marks or learner-specific dated observations in this dataset. Display identifiers are generated from row position.
+            </p>
+        </section>
+        <section class="panel">
+            <h2>
+                Teacher & Family Support Ideas
+            </h2>
+            <p>
+                Actionable engagement suggestions; not automatic decisions.
+            </p>
+            <ol class="recommendations">
+                {% for item in student.recommendations %}
+                    <li>
+                        {{ item }}
+                    </li>
+                {% endfor %}
+            </ol>
+            <a href="/tutor" class="btn btn-primary full-width">Open AI Study Tutor →</a>
+        </section>
+    </div>
+{% endblock %}
