@@ -1,175 +1,79 @@
-# report.py
-# AI Tutor and Student Performance Predictor
-# Generates a report about student performance and academic risk.
+"""Anonymous dataset dashboard aggregates and human-review priority lists."""
 
-import pandas as pd
-from pathlib import Path
-from datetime import datetime
-
-
-DATA_FILE = "student_performance.csv"
-REPORT_FILE = "ai_tutor_report.txt"
-
-
-def load_data(file_path):
-    """Load student performance data."""
-
-    path = Path(file_path)
-
-    if not path.exists():
-        print(f"Error: {file_path} was not found.")
-        return None
-
-    try:
-        data = pd.read_csv(path)
-        return data
-    except Exception as error:
-        print(f"Error loading dataset: {error}")
-        return None
+def dashboard_summary(scored):
+    n = len(scored)
+    return {
+        'students': n,
+        'high': int((scored.risk == 'High').sum()),
+        'moderate': int((scored.risk == 'Moderate').sum()),
+        'low': int((scored.risk == 'Low').sum()),
+        'observed_low': int((scored.Class == 'L').sum()) if 'Class' in scored else None,
+        'average_resources': round(float(scored.VisITedResources.mean()), 1) if n else 0,
+        'above_seven_absences': int((scored.StudentAbsenceDays == 'Above-7').sum()),
+    }
 
 
-def analyse_students(data):
-    """Analyse student marks and identify possible academic risk."""
-
-    required_columns = ["Student_ID", "Marks"]
-
-    for column in required_columns:
-        if column not in data.columns:
-            print(f"Missing required column: {column}")
-            return None
-
-    data["Marks"] = pd.to_numeric(data["Marks"], errors="coerce")
-    data = data.dropna(subset=["Student_ID", "Marks"])
-
-    if data.empty:
-        print("No valid student records found.")
-        return None
-
-    # Calculate each student's average mark.
-    student_results = (
-        data.groupby("Student_ID")["Marks"]
-        .mean()
-        .reset_index()
-    )
-
-    student_results.rename(
-        columns={"Marks": "Average_Marks"},
-        inplace=True
-    )
-
-    # Example threshold; adjust to your institution's requirements.
-    def classify_risk(mark):
-        if mark < 40:
-            return "High Academic Risk"
-        elif mark < 50:
-            return "Needs Academic Support"
-        return "No Risk Flag From Marks Alone"
-
-    student_results["Academic_Status"] = (
-        student_results["Average_Marks"].apply(classify_risk)
-    )
-
-    return student_results
+def grouped_by_course(scored):
+    rows = []
+    for topic, group in scored.groupby('Topic'):
+        rows.append({
+            'course': str(topic), 'students': len(group),
+            'high': int((group.risk == 'High').sum()),
+            'average_resources': round(float(group.VisITedResources.mean()), 1),
+        })
+    return sorted(rows, key=lambda row: (-row['high'], row['course']))
 
 
-def generate_report(results):
-    """Generate a text report."""
-
-    if results is None or results.empty:
-        print("Report could not be generated.")
-        return
-
-    total_students = len(results)
-    overall_average = results["Average_Marks"].mean()
-
-    high_risk = results[
-        results["Academic_Status"] == "High Academic Risk"
-    ]
-
-    support_needed = results[
-        results["Academic_Status"] == "Needs Academic Support"
-    ]
-
-    lines = [
-        "AI TUTOR AND STUDENT PERFORMANCE PREDICTOR",
-        "ACADEMIC PERFORMANCE REPORT",
-        "=" * 50,
-        f"Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-        "",
-        "1. PROJECT OBJECTIVE",
-        (
-            "The system analyses student academic results to identify "
-            "students who may benefit from additional academic support."
-        ),
-        "",
-        "2. SUMMARY",
-        f"Total students analysed: {total_students}",
-        f"Overall average mark: {overall_average:.2f}",
-        f"Students flagged as high academic risk: {len(high_risk)}",
-        f"Students who may need support: {len(support_needed)}",
-        "",
-        "3. STUDENT RESULTS",
-    ]
-
-    for _, student in results.sort_values(
-        "Average_Marks"
-    ).iterrows():
-        lines.append(
-            f"Student ID: {student['Student_ID']} | "
-            f"Average mark: {student['Average_Marks']:.2f} | "
-            f"Status: {student['Academic_Status']}"
-        )
-
-    lines.extend([
-        "",
-        "4. RECOMMENDATIONS",
-        (
-            "Students flagged for support should be offered appropriate "
-            "learning materials, practice questions, and access to the "
-            "AI tutor."
-        ),
-        (
-            "Lecturers should review the results and consider other "
-            "relevant information before making support decisions."
-        ),
-        "",
-        "5. AI TUTOR FUNCTION",
-        (
-            "The AI tutor component is intended to answer academic "
-            "questions, explain difficult topics, and recommend learning "
-            "resources. This report script does not implement the "
-            "question-answering tutor itself."
-        ),
-        "",
-        "6. IMPORTANT LIMITATIONS",
-        (
-            "The academic-status categories use example mark thresholds. "
-            "They are not a trained machine-learning prediction model and "
-            "must be reviewed against institutional requirements."
-        ),
-        (
-            "A student's marks alone do not explain every academic "
-            "difficulty. These results must not be used as the sole basis "
-            "for decisions about students."
-        ),
-        "",
-        "END OF REPORT",
-    ])
-
-    output_path = Path(REPORT_FILE)
-    output_path.write_text("\n".join(lines), encoding="utf-8")
-
-    print("Report generated successfully.")
-    print(f"Saved to: {output_path.resolve()}")
+def alert_rows(scored, limit=12):
+    return scored[scored.risk == 'High'].sort_values('risk_probability', ascending=False).head(limit).to_dict('records')
 
 
-def main():
-    data = load_data(DATA_FILE)
+STAGE_NAMES = {
+    'lowerlevel': 'Lower level',
+    'MiddleSchool': 'Middle school',
+    'HighSchool': 'High school',
+}
 
-    if data is not None:
-        results = analyse_students(data)
-        generate_report(results)
+
+def stage_overview(scored):
+    """School-stage summaries; observed Class is separate from predicted review bands."""
+    rows = []
+    for stage in ('lowerlevel', 'MiddleSchool', 'HighSchool'):
+        sub = scored[scored.StageID == stage]
+        if sub.empty:
+            continue
+        rows.append({
+            'code': stage, 'stage': STAGE_NAMES[stage], 'records': len(sub),
+            'low': int((sub.Class == 'L').sum()) if 'Class' in sub else None,
+            'middle': int((sub.Class == 'M').sum()) if 'Class' in sub else None,
+            'high': int((sub.Class == 'H').sum()) if 'Class' in sub else None,
+            'review': int((sub.risk == 'High').sum()) if 'risk' in sub else None,
+            'mean_visits': round(float(sub.VisITedResources.mean()), 1),
+            'grades': ', '.join(sorted(sub.GradeID.unique())),
+        })
+    return rows
 
 
-if __name__ == "__main__":
-    main()
+def grade_overview(scored):
+    """Per-grade totals without assuming the grade conventions of any country."""
+    rows = []
+    for grade, sub in sorted(scored.groupby('GradeID')):
+        rows.append({
+            'grade': grade, 'records': len(sub),
+            'low': int((sub.Class == 'L').sum()) if 'Class' in sub else None,
+            'high_priority': int((sub.risk == 'High').sum()) if 'risk' in sub else None,
+            'mean_visits': round(float(sub.VisITedResources.mean()), 1),
+        })
+    return rows
+
+
+def school_context(scored):
+    """Descriptive parental fields only, never inputs to the prediction model."""
+    result = {}
+    if 'ParentAnsweringSurvey' in scored:
+        result['survey_yes'] = int((scored.ParentAnsweringSurvey == 'Yes').sum())
+        result['survey_total'] = int(scored.ParentAnsweringSurvey.notna().sum())
+    if 'ParentschoolSatisfaction' in scored:
+        result['satisfaction_good'] = int((scored.ParentschoolSatisfaction == 'Good').sum())
+        result['satisfaction_total'] = int(scored.ParentschoolSatisfaction.notna().sum())
+    return result
