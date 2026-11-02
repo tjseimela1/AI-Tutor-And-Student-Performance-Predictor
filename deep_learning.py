@@ -5,7 +5,7 @@ train_models.py, using the same training/validation/test partitions.
 """
 from pathlib import Path
 import joblib
-from train_models import train
+from train_model import train
 
 
 def load_deep_model():

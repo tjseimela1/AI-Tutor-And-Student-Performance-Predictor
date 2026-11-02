@@ -24,7 +24,7 @@ from predict import score_students, study_recommendation
 from reports import alert_rows, dashboard_summary, grouped_by_course, stage_overview, grade_overview, school_context
 from time_series import chart_points, weekly_trend, semester_comparison, load_optional_history
 from xapi_simulation import run_xapi_simulation, simulated_chart_points, METRIC_LABELS, STAGES, SEMESTERS
-from train_models import train
+from train_model import train
 
 BASE = Path(__file__).resolve().parent
 DATA = BASE / 'data'

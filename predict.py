@@ -3,7 +3,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 from data_preprocessing import DATASET, FEATURES
-from train_models import train
+from train_model import train
 
 
 def load_model(path='models/risk_model.joblib'):
