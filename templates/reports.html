@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% block title %}
+    Model Evaluation
+{% endblock %}
+{% block breadcrumb %}
+    Analytics / Reports
+{% endblock %}
+{% block content %}
+    <div class="heading-row">
+        <div>
+            <span class="kicker">REAL DATASET · MEASURED TEST RESULTS</span>
+            <h1 class="page-title">
+                Reports & Evaluation
+            </h1>
+            <p class="page-subtitle">
+                Stratified 60/20/20 train, validation and held-out test split for L/M/H performance classification.
+            </p>
+        </div>
+        <a href="/reports/download" class="btn btn-primary">↓ Download CSV</a>
+    </div>
+    <section class="panel important-panel">
+        <div class="panel-top">
+            <div>
+                <h2>
+                    Selected: {{ metrics.selected_model }}
+                </h2>
+                <p>
+                    Selected by validation macro-F1 score, evaluated once on held-out test records
+                </p>
+            </div>
+            <span class="small-tag">{{ metrics.test_records }} test rows</span>
+        </div>
+        <div class="metric-grid">
+            {% for key in ['accuracy','balanced_accuracy','precision_macro','recall_macro','f1_macro'] %}
+                <div class="metric">
+                    <small>{{ key|replace('_',' ')|upper }}</small><strong>{{ (metrics.held_out_test[key]*100)|round(1) }}%</strong>
+                </div>
+            {% endfor %}
+        </div>
+        <p class="tiny-note">
+            Results measure classification on this dataset's test subset. They are not proof of transfer to other schools, early-warning effectiveness, or fairness. No dropout or pass/fail labels exist.
+        </p>
+    </section>
+    <div class="dashboard-grid">
+        <section class="panel">
+            <h2>
+                Validation Model Comparison
+            </h2>
+            <p class="panel-description">
+                Algorithms are compared on identical validation rows. Preprocessing is fitted only on training rows.
+            </p>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>
+                                MODEL
+                            </th>
+                            <th>
+                                MACRO F1
+                            </th>
+                            <th>
+                                MACRO RECALL
+                            </th>
+                            <th>
+                                ACCURACY
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, m in metrics.validation_results.items() %}
+                            <tr>
+                                <td>
+                                    <strong>{{ name }}</strong>
+                                </td>
+                                <td>
+                                    {{ (m.f1_macro*100)|round(1) }}%
+                                </td>
+                                <td>
+                                    {{ (m.recall_macro*100)|round(1) }}%
+                                </td>
+                                <td>
+                                    {{ (m.accuracy*100)|round(1) }}%
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <section class="panel">
+            <h2>
+                Test Confusion Matrix
+            </h2>
+            <p class="panel-description">
+                Rows: actual, columns: model prediction. L=Low, M=Middle, H=High.
+            </p>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>
+                            </th>
+                            {% for c in metrics.class_labels %}
+                                <th>
+                                    Pred {{ c }}
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in metrics.held_out_test.confusion_matrix %}
+                            <tr>
+                                <th>
+                                    Actual {{ metrics.class_labels[loop.index0] }}
+                                </th>
+                                {% for cell in line %}
+                                    <td>
+                                        <strong>{{ cell }}</strong>
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+    <section class="panel">
+        <h2>
+            Subjects Overview
+        </h2>
+        <p class="panel-description">
+            Model-estimated priorities by Topic from the benchmark data
+        </p>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            TOPIC
+                        </th>
+                        <th>
+                            RECORDS
+                        </th>
+                        <th>
+                            HIGH PRIORITY
+                        </th>
+                        <th>
+                            MEAN RESOURCE VISITS
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in groups %}
+                        <tr>
+                            <td>
+                                {{ g.course }}
+                            </td>
+                            <td>
+                                {{ g.students }}
+                            </td>
+                            <td>
+                                <span class="risk-pill risk-high">{{ g.high }}</span>
+                            </td>
+                            <td>
+                                {{ g.average_resources }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="panel">
+        <h2>
+            Grade-Level Breakdown
+        </h2>
+        <p class="panel-description">
+            Observed class labels by the grade codes in the source CSV. The dataset includes Grades 2, 4–12 except Grade 3.
+        </p>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            GRADE
+                        </th>
+                        <th>
+                            RECORDS
+                        </th>
+                        <th>
+                            OBSERVED LOW CLASS
+                        </th>
+                        <th>
+                            HIGH TEACHER REVIEW PRIORITY
+                        </th>
+                        <th>
+                            AVERAGE RESOURCE VISITS
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in grades %}
+                        <tr>
+                            <td>
+                                <strong>{{ g.grade }}</strong>
+                            </td>
+                            <td>
+                                {{ g.records }}
+                            </td>
+                            <td>
+                                {{ g.low if g.low is not none else 'n/a' }}
+                            </td>
+                            <td>
+                                {{ g.high_priority }}
+                            </td>
+                            <td>
+                                {{ g.mean_visits }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="panel">
+        <div class="panel-top">
+            <div>
+                <h2>
+                    Parent / Guardian Engagement Fields
+                </h2>
+                <p>
+                    Descriptive dataset context; excluded from the prediction model
+                </p>
+            </div>
+            <span class="small-tag">Not causal evidence</span>
+        </div>
+        {% if school.survey_total or school.satisfaction_total %}
+            <div class="two-col-text">
+                <div class="info-card">
+                    <span>Parent answered survey</span><strong>{{ school.survey_yes }} / {{ school.survey_total }}</strong><small>ParentAnsweringSurvey = Yes</small>
+                </div>
+                <div class="info-card">
+                    <span>Reported school satisfaction</span><strong>{{ school.satisfaction_good }} / {{ school.satisfaction_total }}</strong><small>ParentschoolSatisfaction = Good</small>
+                </div>
+            </div>
+            <p class="tiny-note">
+                These are counts of original data fields, not proof that parent engagement changes performance. Neither field is used to score learners.
+            </p>
+            {% else %}
+            <p>
+                No parent-related fields are available in the currently imported CSV.
+            </p>
+        {% endif %}
+    </section>
+    <section class="panel">
+        <h2>
+            Research Constraints
+        </h2>
+        <p>
+            The xAPI benchmark does not include timestamped histories, exact assessment marks, precise attendance, individual identification or school outcomes. Gender, nationality, place of birth and parent fields are intentionally excluded as training features. See <code>docs/DATASET_AND_METHOD.md</code> for the methodology and limitations.
+        </p>
+    </section>
+{% endblock %}
