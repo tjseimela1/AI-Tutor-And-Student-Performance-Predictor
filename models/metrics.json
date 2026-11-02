@@ -1,0 +1,272 @@
+{
+  "dataset": "xAPI-Edu-Data (Kalboard 360 LMS; Kaggle, aljarah/xAPI-Edu-Data)",
+  "dataset_url": "https://www.kaggle.com/datasets/aljarah/xAPI-Edu-Data",
+  "records": 480,
+  "train_records": 288,
+  "validation_records": 96,
+  "test_records": 96,
+  "target": "Class: L=Low, M=Middle, H=High PERFORMANCE",
+  "features": [
+    "raisedhands",
+    "VisITedResources",
+    "AnnouncementsView",
+    "Discussion",
+    "StageID",
+    "GradeID",
+    "Topic",
+    "Semester",
+    "StudentAbsenceDays"
+  ],
+  "excluded_features": [
+    "gender",
+    "NationalITy",
+    "PlaceofBirth",
+    "SectionID",
+    "Relation",
+    "ParentAnsweringSurvey",
+    "ParentschoolSatisfaction"
+  ],
+  "selected_model": "Random forest",
+  "selection_metric": "validation macro F1",
+  "validation_results": {
+    "Logistic regression": {
+      "accuracy": 0.6771,
+      "balanced_accuracy": 0.6978,
+      "precision_macro": 0.6923,
+      "recall_macro": 0.6978,
+      "f1_macro": 0.6921,
+      "confusion_matrix": [
+        [
+          21,
+          5,
+          0
+        ],
+        [
+          4,
+          24,
+          14
+        ],
+        [
+          0,
+          8,
+          20
+        ]
+      ],
+      "per_class": {
+        "L": {
+          "precision": 0.84,
+          "recall": 0.8076923076923077,
+          "f1-score": 0.8235294117647058,
+          "support": 26.0
+        },
+        "M": {
+          "precision": 0.6486486486486487,
+          "recall": 0.5714285714285714,
+          "f1-score": 0.6075949367088608,
+          "support": 42.0
+        },
+        "H": {
+          "precision": 0.5882352941176471,
+          "recall": 0.7142857142857143,
+          "f1-score": 0.6451612903225806,
+          "support": 28.0
+        },
+        "accuracy": 0.6770833333333334,
+        "macro avg": {
+          "precision": 0.6922946475887652,
+          "recall": 0.6978021978021979,
+          "f1-score": 0.692095212932049,
+          "support": 96.0
+        },
+        "weighted avg": {
+          "precision": 0.6828524112347641,
+          "recall": 0.6770833333333334,
+          "f1-score": 0.6770340435071538,
+          "support": 96.0
+        }
+      }
+    },
+    "Random forest": {
+      "accuracy": 0.7188,
+      "balanced_accuracy": 0.7344,
+      "precision_macro": 0.7279,
+      "recall_macro": 0.7344,
+      "f1_macro": 0.7303,
+      "confusion_matrix": [
+        [
+          22,
+          4,
+          0
+        ],
+        [
+          4,
+          27,
+          11
+        ],
+        [
+          0,
+          8,
+          20
+        ]
+      ],
+      "per_class": {
+        "L": {
+          "precision": 0.8461538461538461,
+          "recall": 0.8461538461538461,
+          "f1-score": 0.8461538461538461,
+          "support": 26.0
+        },
+        "M": {
+          "precision": 0.6923076923076923,
+          "recall": 0.6428571428571429,
+          "f1-score": 0.6666666666666666,
+          "support": 42.0
+        },
+        "H": {
+          "precision": 0.6451612903225806,
+          "recall": 0.7142857142857143,
+          "f1-score": 0.6779661016949152,
+          "support": 28.0
+        },
+        "accuracy": 0.71875,
+        "macro avg": {
+          "precision": 0.7278742762613729,
+          "recall": 0.7344322344322345,
+          "f1-score": 0.730262204838476,
+          "support": 96.0
+        },
+        "weighted avg": {
+          "precision": 0.7202233250620348,
+          "recall": 0.71875,
+          "f1-score": 0.7185734463276837,
+          "support": 96.0
+        }
+      }
+    },
+    "Deep neural network (MLP)": {
+      "accuracy": 0.6562,
+      "balanced_accuracy": 0.6523,
+      "precision_macro": 0.6852,
+      "recall_macro": 0.6523,
+      "f1_macro": 0.665,
+      "confusion_matrix": [
+        [
+          19,
+          7,
+          0
+        ],
+        [
+          3,
+          29,
+          10
+        ],
+        [
+          0,
+          13,
+          15
+        ]
+      ],
+      "per_class": {
+        "L": {
+          "precision": 0.8636363636363636,
+          "recall": 0.7307692307692307,
+          "f1-score": 0.7916666666666666,
+          "support": 26.0
+        },
+        "M": {
+          "precision": 0.5918367346938775,
+          "recall": 0.6904761904761905,
+          "f1-score": 0.6373626373626373,
+          "support": 42.0
+        },
+        "H": {
+          "precision": 0.6,
+          "recall": 0.5357142857142857,
+          "f1-score": 0.5660377358490566,
+          "support": 28.0
+        },
+        "accuracy": 0.65625,
+        "macro avg": {
+          "precision": 0.6851576994434138,
+          "recall": 0.6523199023199022,
+          "f1-score": 0.6650223466261201,
+          "support": 96.0
+        },
+        "weighted avg": {
+          "precision": 0.6678300865800866,
+          "recall": 0.65625,
+          "f1-score": 0.6583502156910176,
+          "support": 96.0
+        }
+      }
+    }
+  },
+  "held_out_test": {
+    "accuracy": 0.6979,
+    "balanced_accuracy": 0.7037,
+    "precision_macro": 0.7112,
+    "recall_macro": 0.7037,
+    "f1_macro": 0.7059,
+    "confusion_matrix": [
+      [
+        20,
+        5,
+        0
+      ],
+      [
+        6,
+        29,
+        7
+      ],
+      [
+        0,
+        11,
+        18
+      ]
+    ],
+    "per_class": {
+      "L": {
+        "precision": 0.7692307692307693,
+        "recall": 0.8,
+        "f1-score": 0.7843137254901961,
+        "support": 25.0
+      },
+      "M": {
+        "precision": 0.6444444444444445,
+        "recall": 0.6904761904761905,
+        "f1-score": 0.6666666666666666,
+        "support": 42.0
+      },
+      "H": {
+        "precision": 0.72,
+        "recall": 0.6206896551724138,
+        "f1-score": 0.6666666666666666,
+        "support": 29.0
+      },
+      "accuracy": 0.6979166666666666,
+      "macro avg": {
+        "precision": 0.7112250712250713,
+        "recall": 0.7037219485495347,
+        "f1-score": 0.7058823529411765,
+        "support": 96.0
+      },
+      "weighted avg": {
+        "precision": 0.6997649572649572,
+        "recall": 0.6979166666666666,
+        "f1-score": 0.6973039215686274,
+        "support": 96.0
+      }
+    }
+  },
+  "class_labels": [
+    "L",
+    "M",
+    "H"
+  ],
+  "risk_thresholds": {
+    "low": "< 30% P(Class=L)",
+    "moderate": "30\u2013<60%",
+    "high": ">=60%"
+  },
+  "limitations": "Performance categories, not pass/fail or dropout outcomes. No marks, precise attendance, student IDs, or dated history. In-dataset display is illustrative; test metrics use held-out rows."
+}
