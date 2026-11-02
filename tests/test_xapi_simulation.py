@@ -86,3 +86,4 @@ def test_simulation_api_and_clear_disclaimers():
     assert 'Class participation (raised hands)' in alternate.text
     assert client.get('/forecast?metric=Class').status_code == 400
     assert client.get('/forecast?stage=University').status_code == 400
+
