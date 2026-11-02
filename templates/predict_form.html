@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}
+    School Performance Prediction
+{% endblock %}
+{% block breadcrumb %}
+    School model / Try prediction
+{% endblock %}
+{% block content %}
+    <div class="heading-row">
+        <div>
+            <span class="kicker">SCHOOL LEARNER PERFORMANCE · XAPI MODEL</span>
+            <h1 class="page-title">
+                Try a School Performance Prediction
+            </h1>
+            <p class="page-subtitle">
+                Choose a school stage, an actual grade from the dataset, a subject and observed learning activity. No learner name is required or stored.
+            </p>
+        </div>
+        <span class="small-tag">Low · Middle · High</span>
+    </div>
+    <div class="dashboard-grid">
+        <section class="panel">
+            <h2>
+                School & Classroom Indicators
+            </h2>
+            <p class="panel-description">
+                These are the nine training features in the xAPI-Edu-Data benchmark. Values are activity counts, not assessment percentages.
+            </p>
+            <form method="post" action="/try-prediction" class="auth-form">
+                <input type="hidden" name="csrf" value="{{ token }}">
+                <div class="input-grid">
+                    <label>School stage
+                    <select id="schoolStage" name="StageID">
+                        {% for stage in stages %}
+                            <option value="{{ stage }}" {% if stage == 'MiddleSchool' %}selected{% endif %}>{{ 'Lower level' if stage == 'lowerlevel' else 'Middle school' if stage == 'MiddleSchool' else 'High school' }}</option>
+                        {% endfor %}
+                    </select>
+                    </label> <label>Grade recorded in dataset
+                    <select id="schoolGrade" name="GradeID">
+                        <option value="G-07">Grade 7</option>
+                    </select>
+                    </label> <label>School subject
+                    <select name="Topic">
+                        {% for topic in subjects %}
+                            <option value="{{ topic }}" {% if topic == 'Math' %}selected{% endif %}>{{ topic }}</option>
+                        {% endfor %}
+                    </select>
+                    </label> <label>Semester group
+                    <select name="Semester">
+                        <option value="F">First (F)</option><option value="S">Second (S)</option>
+                    </select>
+                    </label> <label>Raised hands (0–100)<input name="raisedhands" type="number" value="40" min="0" max="100" required></label> <label>Learning resources visited (0–100)<input name="VisITedResources" type="number" value="35" min="0" max="100" required></label> <label>Announcements viewed (0–100)<input name="AnnouncementsView" type="number" value="30" min="0" max="100" required></label> <label>Discussion participation (0–100)<input name="Discussion" type="number" value="30" min="0" max="100" required></label> <label>Absence group
+                    <select name="StudentAbsenceDays">
+                        <option value="Under-7">Under 7 days</option><option value="Above-7">Above 7 days</option>
+                    </select>
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Predict school performance →
+                </button>
+            </form>
+            <p class="tiny-note">
+                No school, learner identity, exact marks or attendance percentage is inferred. The valid grades change when the educational stage changes.
+            </p>
+        </section>
+        <section class="panel">
+            <h2>
+                Prediction & Teacher Support
+            </h2>
+            {% if result %}
+                <div class="risk-total">
+                    {{ result.predicted_class }} <span>estimated performance group</span>
+                </div>
+                <div class="dist-item">
+                    Probability of Low (L) <strong>{{ result.probability_low }}%</strong>
+                </div>
+                <div class="dist-item">
+                    Probability of Middle (M) <strong>{{ result.probability_middle }}%</strong>
+                </div>
+                <div class="dist-item">
+                    Probability of High (H) <strong>{{ result.probability_high }}%</strong>
+                </div>
+                <p>
+                    <span class="risk-pill risk-{{ result.risk|lower }}">{{ result.risk }} teacher review priority</span>
+                </p>
+                <h3 class="subhead">
+                    Suggested next steps
+                </h3>
+                <ol class="recommendations">
+                    {% for item in result.recommendations %}
+                        <li>
+                            {{ item }}
+                        </li>
+                    {% endfor %}
+                </ol>
+                {% else %}
+                <div class="empty-state">
+                    Complete the school activity fields and select “Predict school performance” to see the Low, Middle or High estimate and teacher support ideas.
+                </div>
+            {% endif %}
+            <p class="tiny-note">
+                Exploratory benchmark only. Class L does not confirm a learner will fail. Estimated probabilities are not calibrated for school decisions.
+            </p>
+        </section>
+    </div>
+    <script id="stageGradeMap" type="application/json">
+        {{ grades_by_stage | tojson }}
+    </script>
+{% endblock %}
