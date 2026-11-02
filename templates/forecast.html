@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% block title %}
+    xAPI Time-Series Simulation
+{% endblock %}
+{% block breadcrumb %}
+    Analytics / Simulated time series
+{% endblock %}
+{% block content %}
+    <div class="heading-row">
+        <div>
+            <span class="kicker">xAPI-EDU-DATA · SIMULATED TIME SERIES</span>
+            <h1 class="page-title">
+                Time-Series &amp; Forecasting Lab
+            </h1>
+            <p class="page-subtitle">
+                A reproducible educational forecasting demonstration based only on the uploaded school-level xAPI dataset.
+            </p>
+        </div>
+    </div>
+    <section class="panel sim-filter-panel">
+        <div class="panel-top">
+            <div>
+                <h2>
+                    Choose a simulation scenario
+                </h2>
+                <p>
+                    Switch metrics and source groups. The same seed ensures reproducible demonstrations.
+                </p>
+            </div>
+            <span class="small-tag">Seed {{ simulation.seed }}</span>
+        </div>
+        <form method="get" action="/forecast" class="sim-filters" aria-label="Simulated weekly scenario filters">
+            <label>Activity measure
+            <select name="metric">
+                {% for code, name in metric_options.items() %}
+                    <option value="{{ code }}" {% if simulation.metric == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+            </label> <label>School stage
+            <select name="stage">
+                {% for code, name in stage_options.items() %}
+                    <option value="{{ code }}" {% if simulation.stage == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+            </label> <label>Semester group
+            <select name="semester">
+                {% for code, name in semester_options.items() %}
+                    <option value="{{ code }}" {% if simulation.semester == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+            </label>
+            <button class="btn btn-primary" type="submit">
+                Run simulation
+            </button>
+        </form>
+    </section>
+    <div class="stats-grid sim-stats">
+        <div class="stat-card">
+            <span class="stat-title">xAPI records sampled</span><strong>{{ simulation.learners }}</strong><small>Real records in the selected cohort</small>
+        </div>
+        <div class="stat-card">
+            <span class="stat-title">Hypothetical weeks</span><strong>{{ simulation.weeks | length }} + {{ simulation.forecast | length }}</strong><small>Eight allocated + three projected</small>
+        </div>
+        <div class="stat-card">
+            <span class="stat-title">Avg. source activity</span><strong>{{ '%.1f'|format(simulation.mean_source_total) }}</strong><small>Actual counter per xAPI record</small>
+        </div>
+        <div class="stat-card">
+            <span class="stat-title">Synthetic backtest MAE</span><strong>{{ '%.2f'|format(simulation.chosen.mae) }}</strong><small>Activity counts per learner/week · NOT real-world accuracy</small>
+        </div>
+    </div>
+    <section class="panel sim-chart-panel">
+        <div class="panel-top">
+            <div>
+                <h2>
+                    {{ simulation.metric_label }} · hypothetical weekly trend
+                </h2>
+                <p>
+                    {{ simulation.stage_label }} · {{ simulation.semester_label }} · average activity count per learner per simulated week
+                </p>
+            </div>
+            <span class="small-tag">W1–W8 simulated · W9–W11 forecast</span>
+        </div>
+        <div class="sim-svg-scroll">
+            <div class="sim-svg-wrap">
+                <svg viewBox="0 0 {{ plot.width }} {{ plot.height }}" role="img" aria-label="Simulated activity for weeks one to eight, followed by predicted simulated weeks nine to eleven" preserveAspectRatio="xMidYMid meet">
+                    <title>
+                        xAPI-derived synthetic weekly activity and demonstration-only forecast
+                    </title>
+                    <rect x="{{ plot.boundary }}" y="24" width="{{ plot.width - plot.boundary - 31 }}" height="{{ plot.height - 78 }}" fill="#eefaf6" rx="8"/>
+                        {% for tick in plot.ticks %}
+                            <line x1="56" y1="{{ tick.y }}" x2="{{ plot.width - 32 }}" y2="{{ tick.y }}" stroke="#e7ebf4" stroke-width="1"/>
+                                <text x="46" y="{{ tick.y + 4 }}" text-anchor="end" class="sim-axis">
+                                    {{ tick.value }}
+                                </text>
+                            {% endfor %}
+                            <line x1="{{ plot.boundary }}" y1="24" x2="{{ plot.boundary }}" y2="{{ plot.height-54 }}" stroke="#83c8b8" stroke-width="1.3" stroke-dasharray="4 6"/>
+                                <text x="{{ plot.boundary + 14 }}" y="43" class="sim-forecast-label">
+                                    FORECAST
+                                </text>
+                                <polyline points="{{ plot.actual_path }}" fill="none" stroke="#4b64df" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+                                    <polyline points="{{ plot.future_path }}" fill="none" stroke="#0b9b83" stroke-width="3.6" stroke-dasharray="8 6" stroke-linejoin="round" stroke-linecap="round"/>
+                                        {% for pt in plot.actual %}
+                                            <circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="4.2" stroke="#4b64df" stroke-width="2.5" fill="white">
+                                                <title>
+                                                    Simulated week {{ pt.week }}: {{ '%.2f'|format(pt.value) }}
+                                                </title>
+                                            </circle>
+                                        {% endfor %}
+                                        {% for pt in plot.future %}
+                                            <circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="5" stroke="white" stroke-width="2.5" fill="#0b9b83">
+                                                <title>
+                                                    Projected simulation week {{ pt.week }}: {{ '%.2f'|format(pt.value) }}
+                                                </title>
+                                            </circle>
+                                        {% endfor %}
+                                        {% for tick in plot.xlabel %}
+                                            <text x="{{ tick.x }}" y="{{ plot.height - 24 }}" text-anchor="middle" class="sim-axis {% if tick.week >
+                                                8 %}sim-future-tick
+                                            {% endif %}
+                                            ">W{{ tick.week }}
+                                        </text>
+                                    {% endfor %}
+                                    <text x="{{ plot.width/2 }}" y="{{ plot.height-4 }}" text-anchor="middle" class="sim-watermark">
+                                        ALL WEEKS HYPOTHETICAL · NO REAL DATES
+                                    </text>
+            </svg>
+        </div>
+    </div>
+    <div class="sim-legend">
+        <span><i class="sim-dot sim-indigo"></i>Allocated xAPI activity (synthetic W1–W8)</span><span><i class="sim-dot sim-teal"></i>Simulated forecast (W9–W11)</span>
+    </div>
+    <p class="tiny-note">
+        Vertical axis: average activity count per learner per hypothetical week (starting at zero). The dotted line does not describe a real learner's future performance.
+    </p>
+</section>
+<div class="sim-two-col">
+    <section class="panel sim-forecast-summary">
+        <span class="kicker">SIMULATED FORECAST</span>
+        <h2>
+            Next hypothetical week
+        </h2>
+        <div class="sim-forecast-number">
+            {{ '%.2f'|format(simulation.forecast[0].value) }} <small>activities / learner</small>
+        </div>
+        <span class="small-tag">{{ simulation.chosen.name }}</span>
+        <p>
+            The algorithm uses only preceding simulated weeks for each test prediction, compares methods using mean absolute error, then extends the chosen method three weeks into the imagined future.
+        </p>
+        <p class="tiny-note">
+            <strong>No operational prediction:</strong> neither the forecast nor its backtest error is validated against dated observations from a school.
+        </p>
+    </section>
+    <section class="panel">
+        <h2>
+            Forecast method comparison
+        </h2>
+        <p class="panel-description">
+            Expanding-window, one-week-ahead evaluation for synthetic weeks 5–8. Lower synthetic MAE is better.
+        </p>
+        <div class="sim-methods">
+            {% for m in simulation.models %}
+                <div class="sim-method {% if m.code == simulation.chosen.code %}selected{% endif %}">
+                    <div>
+                        <strong>{{ m.name }}</strong>
+                        {% if m.code == simulation.chosen.code %}
+                            <span class="sim-best">Best on simulation</span>
+                        {% endif %}
+                    </div>
+                    <b>{{ '%.3f'|format(m.mae) }} MAE</b>
+                </div>
+            {% endfor %}
+        </div>
+        <p class="tiny-note">
+            This compares forecasting techniques, not the accuracy of the main L/M/H classification model.
+        </p>
+    </section>
+</div>
+<div class="sim-two-col">
+    <section class="panel">
+        <h2>
+            Weeks used in the simulation
+        </h2>
+        <p class="panel-description">
+            Eight generated averages followed by three projected averages. The original dataset contains no dates.
+        </p>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            WEEK
+                        </th>
+                        <th>
+                            AVG. ACTIVITIES / LEARNER
+                        </th>
+                        <th>
+                            TYPE
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in simulation.weeks %}
+                        <tr>
+                            <td>
+                                W{{ p.week }}
+                            </td>
+                            <td>
+                                {{ '%.2f'|format(p.value) }}
+                            </td>
+                            <td>
+                                <span class="sim-synthetic-pill">Synthetic allocation</span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% for p in simulation.forecast %}
+                        <tr>
+                            <td>
+                                W{{ p.week }}
+                            </td>
+                            <td>
+                                {{ '%.2f'|format(p.value) }}
+                            </td>
+                            <td>
+                                <span class="sim-forecast-pill">Synthetic projection</span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="panel">
+        <h2>
+            Walk-forward backtest (synthetic)
+        </h2>
+        <p class="panel-description">
+            Each test predicts the next generated week using only prior generated weeks.
+        </p>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            WEEK
+                        </th>
+                        <th>
+                            SIMULATED VALUE
+                        </th>
+                        <th>
+                            BEST PREDICTION
+                        </th>
+                        <th>
+                            ABS. ERROR
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trial in simulation.backtest %}
+                        <tr>
+                            <td>
+                                W{{ trial.week }}
+                            </td>
+                            <td>
+                                {{ '%.2f'|format(trial.simulated) }}
+                            </td>
+                            <td>
+                                {{ '%.2f'|format(trial[simulation.chosen.code]) }}
+                            </td>
+                            <td>
+                                {{ '%.2f'|format(trial[simulation.chosen.code+'_error']) }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+<div class="sim-two-col">
+    <section class="panel">
+        <h2>
+            Real xAPI semester comparison
+        </h2>
+        <p class="panel-description">
+            This section uses unmodified source records. F and S are different observed cohorts; the comparison is <b>not</b> a dated time series.
+        </p>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            SEMESTER
+                        </th>
+                        <th>
+                            RECORDS
+                        </th>
+                        <th>
+                            LOW CLASS
+                        </th>
+                        <th>
+                            MEAN RESOURCE VISITS
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in semesters %}
+                        <tr>
+                            <td>
+                                {{ s.semester }}
+                            </td>
+                            <td>
+                                {{ s.records }}
+                            </td>
+                            <td>
+                                {{ s.low_percent }}%
+                            </td>
+                            <td>
+                                {{ s.average_visits }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="panel">
+        <h2>
+            Simulation methodology &amp; limitations
+        </h2>
+        <p class="sim-method-description">
+            The source <code>xAPI-Edu-Data.csv</code> provides the original activity total for each record. A reproducible seeded multinomial allocation splits that exact total among eight hypothetical weeks. The weekly timing and pattern are made up for teaching purposes; they cannot be recovered from the real dataset.
+        </p>
+        <p class="sim-method-description">
+            The <b>previous-week</b>, <b>three-week average</b> and <b>four-week linear-trend</b> methods are backtested on these generated weeks. No class labels are used to create synthetic activity, and the synthetic forecast is not used to predict learners' L/M/H performance.
+        </p>
+        <p class="tiny-note">
+            For this selected group, {{ simulation.source_total }} raw activities were distributed across the hypothetical weeks. Their total is preserved exactly: {{ simulation.allocation_total }} allocated activities. This verifies arithmetic conservation, <b>not</b> the assumed weekly schedule.
+        </p>
+    </section>
+</div>
+{% endblock %}
