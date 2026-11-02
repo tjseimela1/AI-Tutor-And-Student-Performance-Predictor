@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Educational AI prototype for identifying at-risk learners and supporting study through an NLP tutor.">
+        <title>
+            {% block title %}
+                School Learner Performance Predictor
+            {% endblock %}
+            | EduPulse AI
+        </title>
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+        <script src="{{ url_for('static', path='/js/app.js') }}" defer>
+        </script>
+    </head>
+    <body>
+        <div class="shell">
+            <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+                <a class="brand" href="/" aria-label="EduPulse AI home"><span class="brand-icon">✳</span><span>EduPulse<span class="brand-accent">AI</span><small>School learning insights</small></span></a>
+                <div class="nav-label">
+                    WORKSPACE
+                </div>
+                <nav class="sidebar-nav">
+                    <a class="nav-link {% if request.url.path == '/' %}active{% endif %}" href="/"><span>⌂</span> Overview</a> <a class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}" href="/dashboard"><span>▦</span> Dashboard</a> <a class="nav-link {% if request.url.path.startswith('/learners') or request.url.path.startswith('/students') %}active{% endif %}" href="/learners"><span>♙</span> Learners</a> <a class="nav-link {% if request.url.path == '/forecast' %}active{% endif %}" href="/forecast"><span>⌁</span> Time series</a> <a class="nav-link {% if request.url.path == '/try-prediction' %}active{% endif %}" href="/try-prediction"><span>✳</span> Try Prediction</a> <a class="nav-link {% if request.url.path == '/reports' %}active{% endif %}" href="/reports"><span>▤</span> Reports</a> <a class="nav-link {% if request.url.path == '/tutor' %}active{% endif %}" href="/tutor"><span>✧</span> AI Study Tutor</a>
+                </nav>
+                
+            </aside>
+            <div class="content-wrap">
+                <header class="topbar">
+                    <button class="menu-button" id="menuButton" type="button" aria-label="Toggle navigation" aria-expanded="false">
+                        ☰
+                    </button>
+                    <div class="breadcrumb">
+                        School analytics <span>/</span>
+                        {% block breadcrumb %}
+                            Overview
+                        {% endblock %}
+                    </div>
+                    <div class="topbar-actions">
+                        <span class="mode-badge">
+                        {% if demo_mode %}
+                            <span class="dot"></span> xAPI benchmark
+                            {% else %}
+                            Restricted workspace
+                        {% endif %}
+                        </span><a href="/tutor" class="topbar-avatar" title="Open study tutor">AI</a>
+                    </div>
+                </header>
+                <main class="main">
+                    {% if not demo_mode %}
+                        <div class="notice warning">
+                            <span class="notice-icon">!</span> <span><strong>School research prototype.</strong> Predictions require local validation and human review. Do not make automatic decisions about learners.</span>
+                        </div>
+                    {% endif %}
+                    {% block content %}
+                    {% endblock %}
+                    <footer class="footer">
+                        EduPulse AI · School Learner Performance Predictor <span>School-level educational demonstration · Teacher-reviewed insights</span>
+                    </footer>
+                </main>
+            </div>
+        </div>
+    </body>
+</html>
