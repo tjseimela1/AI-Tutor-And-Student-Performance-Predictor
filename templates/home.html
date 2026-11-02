@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}
+    Overview
+{% endblock %}
+{% block breadcrumb %}
+    Overview
+{% endblock %}
+{% block content %}
+    <div class="hero">
+        <div class="hero-copy">
+            <span class="eyebrow">AI FOR SCHOOLS <span>•</span> xAPI-EDU-DATA BENCHMARK</span>
+            <h1>
+                Understand learning.<br><em>Support every learner.</em>
+            </h1>
+            <p>
+                School-level learning analytics, grade and subject insights, and a study tutor—all based on the 480-record xAPI educational benchmark.
+            </p>
+            <div class="hero-actions">
+                <a href="/dashboard" class="btn btn-white">Explore Dashboard <span>↗</span></a><a href="/tutor" class="btn btn-outline-white">Try AI Study Tutor →</a>
+            </div>
+            <div class="hero-foot">
+                <span>✓ School performance ML</span><span>✓ Grades 2–12 in source</span><span>✓ School study support</span>
+            </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+            <div class="floating-analytics">
+                <div class="mini-header">
+                    <span class="mini-icon">✦</span> School learning insights <span class="mini-dot">•••</span>
+                </div>
+                <div class="mini-body">
+                    <span>Learning engagement</span><strong>Performance overview</strong>
+                    <div class="mini-bars">
+                        <i style="height:38%"></i><i style="height:53%"></i><i style="height:45%"></i><i style="height:66%"></i><i style="height:58%"></i><i style="height:78%"></i><i style="height:86%"></i>
+                    </div>
+                    <div class="mini-alert">
+                        <span>↗</span>
+                        <div>
+                            <strong>Earlier intervention</strong><small>Insights that support educators</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="orbit orb-one">
+            </div>
+            <div class="orbit orb-two">
+            </div>
+            <div class="sparkle">
+                ✧
+            </div>
+        </div>
+    </div>
+    <div class="section-heading">
+        <div>
+            <span class="kicker">EXPLORE THE PLATFORM</span>
+            <h2>
+                Everything in one place
+            </h2>
+            <p>
+                From school engagement insights to meaningful academic guidance.
+            </p>
+        </div>
+    </div>
+    <div class="feature-grid">
+        <a class="feature-card" href="/dashboard">
+        <div class="feature-icon blue">
+            ▦
+        </div>
+        <span class="feature-arrow">↗</span>
+        <h3>
+            Performance Prediction
+        </h3>
+        <p>
+            Predict Low, Middle or High performance from classroom activity, resource visits, absence categories and school context.
+        </p>
+        <span class="feature-link">View dashboard →</span></a> <a class="feature-card" href="/learners">
+        <div class="feature-icon violet">
+            ♙
+        </div>
+        <span class="feature-arrow">↗</span>
+        <h3>
+            Learner Records
+        </h3>
+        <p>
+            Filter anonymous learner records by school stage, grade and teacher review priority.
+        </p>
+        <span class="feature-link">Explore learners →</span></a> <a class="feature-card" href="/forecast">
+        <div class="feature-icon mint">
+            ⌁
+        </div>
+        <span class="feature-arrow">↗</span>
+        <h3>
+            Performance Trends
+        </h3>
+        <p>
+            Compare semester groups, and see why genuine dated records are necessary for forecasting.
+        </p>
+        <span class="feature-link">See trends →</span></a> <a class="feature-card" href="/tutor">
+        <div class="feature-icon orange">
+            ✧
+        </div>
+        <span class="feature-arrow">↗</span>
+        <h3>
+            AI Study Tutor
+        </h3>
+        <p>
+            Ask school-friendly questions about mathematics, science, English, homework and revision.
+        </p>
+        <span class="feature-link">Start a conversation →</span></a>
+    </div>
+    <div class="bottom-banner">
+        <div>
+            <strong>Supporting teachers with learning insights.</strong>
+            <p>
+                Explore school-stage patterns without treating model estimates as final academic decisions.
+            </p>
+        </div>
+        <a href="/reports" class="btn btn-dark">Explore reports ↗</a>
+    </div>
+{% endblock %}

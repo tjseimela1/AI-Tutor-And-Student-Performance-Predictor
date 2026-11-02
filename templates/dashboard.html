@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}
+    xAPI Dashboard
+{% endblock %}
+{% block breadcrumb %}
+    Analytics / Dataset dashboard
+{% endblock %}
+{% block content %}
+    <div class="heading-row">
+        <div>
+            <span class="kicker">XAPI EDUCATIONAL ANALYTICS</span>
+            <h1 class="page-title">
+                Performance Dashboard
+            </h1>
+            <p class="page-subtitle">
+                Actual xAPI school-level benchmark records · model-estimated low-performance likelihood · anonymous row IDs
+            </p>
+        </div>
+        <a href="/reports/download" class="btn btn-secondary">↓ Export CSV</a>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-title">Learner Records <span class="stat-icon lavender">♙</span></span><strong>{{ summary.students }}</strong><small>Anonymous xAPI rows</small>
+        </div>
+        <div class="stat-card">
+            <span class="stat-title">High Review Priority <span class="stat-icon rose">!</span></span><strong>{{ summary.high }}</strong><small>Model-estimated; not confirmed failures</small>
+        </div>
+        <div class="stat-card">
+            <span class="stat-title">Avg. Resource Visits <span class="stat-icon blue">▥</span></span><strong>{{ summary.average_resources }}</strong><small>VisITedResources engagement measure</small>
+        </div>
+        <div class="stat-card">
+            <span class="stat-title">Absences Above 7 Days <span class="stat-icon mint">↗</span></span><strong>{{ summary.above_seven_absences }}</strong><small>Reported categorical absence group</small>
+        </div>
+    </div>
+    <section class="panel school-panel">
+        <div class="panel-top">
+            <div>
+                <h2>
+                    School Stages in the xAPI Dataset
+                </h2>
+                <p>
+                    Observed records and recorded L / M / H class mix by educational stage
+                </p>
+            </div>
+            <span class="small-tag">Actual benchmark counts</span>
+        </div>
+        <div class="school-stage-grid">
+            {% for stage in stages %}
+                <div class="school-stage-card">
+                    <div class="stage-card-top">
+                        <div>
+                            <strong>{{ stage.stage }}</strong><small>{{ stage.grades }}</small>
+                        </div>
+                        <b>{{ stage.records }}</b>
+                    </div>
+                    {% if stage.low is not none %}
+                        <div class="stacked-bar">
+                            <span style="width:{{ 100*stage.low/stage.records }}%;background:#f17686"></span><span style="width:{{ 100*stage.middle/stage.records }}%;background:#f1b75c"></span><span style="width:{{ 100*stage.high/stage.records }}%;background:#31b99c"></span>
+                        </div>
+                        <div class="stage-caption">
+                            {{ stage.low }} low · {{ stage.middle }} middle · {{ stage.high }} high
+                        </div>
+                    {% endif %}
+                    <a class="stage-link" href="/learners?stage={{ stage.code }}">Explore {{ stage.stage|lower }} records →</a>
+                </div>
+            {% endfor %}
+        </div>
+        <p class="tiny-note">
+            Counts are records in the public school-level benchmark, not a live school enrolment system. These are observed labels, not model predictions.
+        </p>
+    </section>
+    <div class="dashboard-grid">
+        <section class="panel main-panel">
+            <div class="panel-top">
+                <div>
+                    <h2>
+                        Performance by Semester Group
+                    </h2>
+                    <p>
+                        F and S semester cohorts; NOT a longitudinal time series
+                    </p>
+                </div>
+                <span class="small-tag">Real dataset</span>
+            </div>
+            {% for s in semesters %}
+                <div class="sem-row">
+                    <strong>{{ s.semester }}</strong><span>{{ s.records }} records · {{ s.average_visits }} mean resource visits</span>
+                </div>
+                <div class="stacked-bar">
+                    <span style="width:{{ 100*s.low/s.records }}%;background:#f17686"></span><span style="width:{{ 100*s.middle/s.records }}%;background:#f1b75c"></span><span style="width:{{ 100*s.high/s.records }}%;background:#31b99c"></span>
+                </div>
+            {% endfor %}
+            <p class="tiny-note">
+                Legend: <span style="color:#dc6075">●</span> Observed Low · <span style="color:#bf8c30">●</span> Middle · <span style="color:#159a82">●</span> High. The original CSV does not identify individual learners across semesters.
+            </p>
+        </section>
+        <section class="panel">
+            <div class="panel-top">
+                <div>
+                    <h2>
+                        Teacher Review Priority
+                    </h2>
+                    <p>
+                        Based on model probability of Class L
+                    </p>
+                </div>
+            </div>
+            <div class="risk-total">
+                {{ summary.students }} <span>dataset observations</span>
+            </div>
+            <div class="stacked-bar">
+                <span style="width:{{ 100*summary.high/summary.students if summary.students else 0 }}%;background:#f17686"></span><span style="width:{{ 100*summary.moderate/summary.students if summary.students else 0 }}%;background:#f1b75c"></span><span style="width:{{ 100*summary.low/summary.students if summary.students else 0 }}%;background:#31b99c"></span>
+            </div>
+            <div class="dist-item">
+                <i class="key-dot red"></i> High ≥60% <strong>{{ summary.high }}</strong>
+            </div>
+            <div class="dist-item">
+                <i class="key-dot amber"></i> Moderate 30–59% <strong>{{ summary.moderate }}</strong>
+            </div>
+            <div class="dist-item">
+                <i class="key-dot green"></i> Low &lt;30% <strong>{{ summary.low }}</strong>
+            </div>
+            <div class="dist-foot">
+                Selected: <strong>{{ model_name }}</strong>
+            </div>
+            <p class="tiny-note">
+                Priority thresholds are illustrative and probabilities are not calibrated for deployment.
+            </p>
+        </section>
+    </div>
+    <section class="panel table-panel">
+        <div class="panel-top">
+            <div>
+                <h2>
+                    Records to Review
+                </h2>
+                <p>
+                    Highest predicted probability of Low performance (L); teachers must review learner context
+                </p>
+            </div>
+            <a class="text-link" href="/learners?risk=High">View all →</a>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            RECORD
+                        </th>
+                        <th>
+                            TOPIC
+                        </th>
+                        <th>
+                            RESOURCE VISITS
+                        </th>
+                        <th>
+                            ABSENCE
+                        </th>
+                        <th>
+                            P(LOW)
+                        </th>
+                        <th>
+                            PRIORITY
+                        </th>
+                        <th>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in alerts %}
+                        <tr>
+                            <td>
+                                <div class="student-cell">
+                                    <span class="student-avatar">X</span>
+                                    <div>
+                                        <strong>{{ s.student_id }}</strong><small>Anonymous dataset row</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {{ s.Topic }}
+                            </td>
+                            <td>
+                                {{ s.VisITedResources }}
+                            </td>
+                            <td>
+                                {{ s.StudentAbsenceDays }}
+                            </td>
+                            <td>
+                                <strong>{{ s.probability_low }}%</strong>
+                            </td>
+                            <td>
+                                <span class="risk-pill risk-high">High</span>
+                            </td>
+                            <td>
+                                <a href="/learners/{{ s.student_id | urlencode }}" class="row-arrow" aria-label="View record">↗</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7">
+                                No rows match the High priority band.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="tiny-note">
+            Training records are also displayed here, so this is a descriptive exploration, not an independent assessment of model accuracy. See Reports for held-out test results.
+        </p>
+    </section>
+{% endblock %}

@@ -1,64 +1,72 @@
+"""Load and validate the genuine xAPI-Edu-Data benchmark CSV (480 records).
+
+Important: these anonymous records have no learner identity, timestamp, precise
+mark, or attendance percentage. The row IDs below are display-only identifiers.
+"""
+from pathlib import Path
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
-DATA_PATH = "data/xAPI-Edu-Data.csv"
-TARGET = "Class"                      # L = low, M = medium, H = high
-LABELS = {"L": 0, "M": 1, "H": 2}
-
-
-def load_data(path=DATA_PATH):
-    return pd.read_csv(path)
-
-
-def clean_data(df):
-    df = df.copy()
-
-    # 1. Fix inconsistent column names
-    df = df.rename(columns={
-        "NationalITy": "Nationality",
-        "PlaceofBirth": "PlaceOfBirth",
-        "VisITedResources": "VisitedResources",
-        "raisedhands": "RaisedHands",
-        "ParentschoolSatisfaction": "ParentSchoolSatisfaction",
-    })
-
-    # 2. Remove duplicates and report missing values
-    df = df.drop_duplicates()
-    print("Missing values:", int(df.isna().sum().sum()))
-    df = df.dropna()
-
-    # 3. Standardise misspelled text values
-    fixes = {"KuwaIT": "Kuwait", "KW": "Kuwait", "lebanon": "Lebanon",
-             "Tunis": "Tunisia", "Lybia": "Libya", "venzuela": "Venezuela",
-             "SaudiArabia": "Saudi Arabia", "USA": "United States"}
-    for col in ["Nationality", "PlaceOfBirth"]:
-        df[col] = df[col].replace(fixes).str.strip()
-
-    return df
+BASE = Path(__file__).resolve().parent
+DATASET = BASE / 'data' / 'xAPI-Edu-Data.csv'
+NUMERIC_FEATURES = ['raisedhands', 'VisITedResources', 'AnnouncementsView', 'Discussion']
+CATEGORICAL_FEATURES = ['StageID', 'GradeID', 'Topic', 'Semester', 'StudentAbsenceDays']
+FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
+TARGET = 'Class'
+CLASSES = ['L', 'M', 'H']  # Low/Middle/High academic PERFORMANCE, not pass/fail
+RAW_COLUMNS = [
+    'gender', 'NationalITy', 'PlaceofBirth', 'StageID', 'GradeID',
+    'SectionID', 'Topic', 'Semester', 'Relation', 'raisedhands',
+    'VisITedResources', 'AnnouncementsView', 'Discussion',
+    'ParentAnsweringSurvey', 'ParentschoolSatisfaction',
+    'StudentAbsenceDays', 'Class',
+]
 
 
-def encode_features(df):
-    """Turn text columns into numbers the models can use."""
-    y = df[TARGET].map(LABELS)
-    X = df.drop(columns=[TARGET])
-    X = pd.get_dummies(X, drop_first=True)   # one-hot encoding
-    return X, y
+def prepare_records(frame, *, require_target=True):
+    """Validate real xAPI schema. Retain target for auditing, never as an input."""
+    missing = [c for c in FEATURES if c not in frame.columns]
+    if require_target and TARGET not in frame:
+        missing.append(TARGET)
+    if missing:
+        raise ValueError('Missing xAPI columns: ' + ', '.join(missing))
+    if not 1 <= len(frame) <= 5000:
+        raise ValueError('Dataset must contain between 1 and 5,000 records.')
+    out = frame.copy().reset_index(drop=True)
+    for col in NUMERIC_FEATURES:
+        out[col] = pd.to_numeric(out[col], errors='coerce')
+        if out[col].isna().any() or (~out[col].between(0, 100)).any():
+            raise ValueError(f'{col} must be numeric and within 0–100.')
+    for col in CATEGORICAL_FEATURES:
+        if out[col].isna().any() or (out[col].astype(str).str.strip() == '').any():
+            raise ValueError(f'{col} must not be blank.')
+        out[col] = out[col].astype(str).str.strip().str.slice(0, 80)
+    if 'StudentAbsenceDays' in out and not out['StudentAbsenceDays'].isin(['Under-7', 'Above-7']).all():
+        raise ValueError('StudentAbsenceDays must be Under-7 or Above-7.')
+    if TARGET in out:
+        if not out[TARGET].isin(CLASSES).all():
+            raise ValueError('Class must contain L, M, or H only.')
+    # Data has no identifiers. Never invent people: these are dataset row numbers.
+    out['student_id'] = [f'XAPI-{i:04d}' for i in range(1, len(out) + 1)]
+    out['student_name'] = [f'Dataset record {i:03d}' for i in range(1, len(out) + 1)]
+    out['learner_id'] = out['student_id']
+    out['learner_label'] = out['student_name']
+    out['course'] = out['Topic']
+    return out
 
 
-def get_train_test(test_size=0.2, seed=42):
-    """Full pipeline: returns X_train, X_test, y_train, y_test."""
-    df = clean_data(load_data())
-    X, y = encode_features(df)
-    return train_test_split(X, y, test_size=test_size,
-                            random_state=seed, stratify=y)
+def load_dataset(path=DATASET):
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f'Missing xAPI dataset: {path}. Place the supplied CSV at data/xAPI-Edu-Data.csv.')
+    return prepare_records(pd.read_csv(path), require_target=True)
 
 
-if __name__ == "__main__":
-    df = clean_data(load_data())
-    print("Shape after cleaning:", df.shape)
-    print(df[TARGET].value_counts())
-    X_train, X_test, y_train, y_test = get_train_test()
-    print("Features:", X_train.shape[1])
-    print("Train rows:", len(X_train), "| Test rows:", len(X_test))
-    df.to_csv("cleaned_student_data.csv", index=False)
-    print("Saved cleaned_student_data.csv")
+def validate_student_csv(file_like):
+    """Restricted-mode optional CSV must use xAPI field names, not invented marks."""
+    return prepare_records(pd.read_csv(file_like, nrows=5001), require_target=False)
+
+
+if __name__ == '__main__':
+    df = load_dataset()
+    print('xAPI-Edu-Data loaded:', len(df), 'records,', len(FEATURES), 'chosen model inputs')
+    print('Performance classes:', df.Class.value_counts().to_dict())
