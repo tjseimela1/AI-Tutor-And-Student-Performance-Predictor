@@ -18,4 +18,3 @@ def load_deep_model():
 if __name__ == '__main__':
     model = load_deep_model()
     print('Neural network hidden layers:', model.named_steps['model'].hidden_layer_sizes)
-"
